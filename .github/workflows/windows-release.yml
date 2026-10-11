@@ -2,8 +2,7 @@ name: Build 550W Windows editions
 
 on:
   push:
-    branches: [main]
-    paths-ignore: ['README.md', 'PRIVACY.md', 'docs/**']
+    tags: ['v*']
   workflow_dispatch:
 
 permissions:
@@ -40,15 +39,105 @@ jobs:
         run: |
           $buildPython = (Get-Command python).Source
           ./scripts/build.ps1 -Python $buildPython -SkipInstall
-      - name: Publish two ZIP files
+      - name: Upload and verify a draft before publishing
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          $tag = 'v0.3.0'
-          gh release view $tag --json tagName 2>$null
-          if ($LASTEXITCODE -eq 0) {
-            throw 'This release already exists. Keep its assets; bump the version before another release.'
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $false
+          $version = python -c "import pathlib,tomllib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text(encoding='utf-8-sig'))['project']['version'])"
+          if ($LASTEXITCODE -ne 0 -or $version -notmatch '^\d+\.\d+\.\d+$') { throw 'Cannot determine the release version.' }
+          $tag = "v$version"
+          if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -ne $tag) {
+            throw 'The pushed tag does not match pyproject.toml.'
           }
-          gh release create $tag 'dist/550W简洁版.zip' 'dist/550W完整版.zip' 'dist/SHA256SUMS.txt' --target $env:GITHUB_SHA --title '550W 0.3.0 — 简洁版与完整版' --notes-file docs/RELEASE-NOTES.md
-          if ($LASTEXITCODE -ne 0) { throw 'Release upload failed.' }
+          $repo = $env:GH_REPO
+          $files = @('dist/550W简洁版.zip', 'dist/550W完整版.zip', 'dist/SHA256SUMS.txt')
+          $expected = @{}
+          foreach ($path in $files) {
+            $file = Get-Item -LiteralPath $path
+            if ($file.Length -le 0) { throw "Empty release file: $path" }
+            $expected[$file.Name] = @{ Size = $file.Length; Digest = 'sha256:' + (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant() }
+          }
+          foreach ($editionName in @('550W简洁版', '550W完整版')) {
+            $manifest = Get-Content -LiteralPath "dist/$editionName/RELEASE.json" -Raw | ConvertFrom-Json
+            if ($manifest.version -ne $version) { throw 'Packaged version does not match pyproject.toml.' }
+          }
+          # A failed API read is not evidence that the release does not exist.
+          $releasePages = gh api "repos/$repo/releases?per_page=100" --paginate --slurp
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot check existing releases; no release will be created.' }
+          $existing = @($releasePages | ConvertFrom-Json | ForEach-Object { $_ } | Where-Object { $_.tag_name -eq $tag })
+          if ($existing.Count -ne 0) {
+            throw 'This release or draft already exists. Preserve it; recover its draft deliberately or bump the version.'
+          }
+          gh --version
+          $releaseArguments = @('release', 'create', $tag, '--draft', '--target', $env:GITHUB_SHA,
+            '--title', "550W $version — 简洁版与完整版", '--notes-file', 'docs/RELEASE-NOTES.md')
+          if ($env:GITHUB_REF_TYPE -eq 'tag') { $releaseArguments += '--verify-tag' }
+          & gh @releaseArguments
+          if ($LASTEXITCODE -ne 0) { throw 'Draft creation failed.' }
+          $draftJson = gh release view $tag --json databaseId,isDraft,tagName
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot identify the new draft; it will remain unpublished.' }
+          $draft = $draftJson | ConvertFrom-Json
+          if (-not $draft.isDraft -or $draft.tagName -ne $tag) { throw 'Expected a new draft release.' }
+          $releaseId = $draft.databaseId
+          $releasePath = "repos/$repo/releases/$releaseId"
+          Write-Host "Created draft $tag (release ID $releaseId). Failures leave the draft for inspection."
+
+          function Read-OwnDraft {
+            $json = gh api $releasePath
+            if ($LASTEXITCODE -ne 0) { throw 'Cannot read the draft; it will remain unpublished.' }
+            $release = $json | ConvertFrom-Json
+            if (-not $release.draft -or $release.id -ne $releaseId -or $release.tag_name -ne $tag) {
+              throw 'Release identity or draft status changed; refusing to modify it.'
+            }
+            return $release
+          }
+          function Test-Asset($asset, $name) {
+            return ($asset.state -eq 'uploaded' -and $asset.size -eq $expected[$name].Size -and
+              $asset.digest -eq $expected[$name].Digest)
+          }
+          foreach ($path in $files) {
+            $name = [IO.Path]::GetFileName($path)
+            $uploaded = $false
+            for ($attempt = 1; $attempt -le 3; $attempt++) {
+              $release = Read-OwnDraft
+              $asset = @($release.assets | Where-Object { $_.name -ceq $name })
+              if ($asset.Count -eq 1 -and (Test-Asset $asset[0] $name)) { $uploaded = $true; break }
+              # GitHub can leave an empty starter after an interrupted upload.
+              # Delete only that incomplete asset in this run's new draft.
+              if ($asset.Count -eq 1 -and $asset[0].state -eq 'starter' -and $asset[0].size -eq 0) {
+                gh api --method DELETE "repos/$repo/releases/assets/$($asset[0].id)"
+                if ($LASTEXITCODE -ne 0) { throw 'Cannot remove an incomplete draft upload.' }
+              } elseif ($asset.Count -ne 0) { throw "Unexpected draft asset: $name; refusing to overwrite it." }
+              Write-Host "Uploading $name (attempt $attempt of 3)..."
+              gh release upload $tag $path
+              $uploadExit = $LASTEXITCODE
+              $release = Read-OwnDraft
+              $asset = @($release.assets | Where-Object { $_.name -ceq $name })
+              if ($asset.Count -eq 1 -and (Test-Asset $asset[0] $name)) { $uploaded = $true; break }
+              if ($attempt -lt 3) {
+                Write-Warning "Upload is not verified (exit $uploadExit); retrying $name."
+                Start-Sleep -Seconds (5 * $attempt)
+              }
+            }
+            if (-not $uploaded) { throw "Upload failed after 3 attempts: $name. Draft remains unpublished." }
+          }
+          $release = Read-OwnDraft
+          if (@($release.assets).Count -ne $expected.Count) { throw 'Expected exactly three release attachments.' }
+          foreach ($name in $expected.Keys) {
+            $asset = @($release.assets | Where-Object { $_.name -ceq $name })
+            if ($asset.Count -ne 1 -or -not (Test-Asset $asset[0] $name)) {
+              throw "Final attachment verification failed: $name. Draft remains unpublished."
+            }
+          }
+          $publishArguments = @('release', 'edit', $tag, '--draft=false')
+          if ($env:GITHUB_REF_TYPE -eq 'tag') { $publishArguments += @('--tag', $tag, '--verify-tag') }
+          & gh @publishArguments
+          if ($LASTEXITCODE -ne 0) { throw 'Publishing failed; inspect the release before retrying.' }
+          $publishedJson = gh api $releasePath
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot confirm publication; inspect the release before retrying.' }
+          $published = $publishedJson | ConvertFrom-Json
+          if ($published.draft -or $published.id -ne $releaseId) { throw 'Release publication was not confirmed.' }
+          Write-Host "Published $tag with all three attachments verified by size and SHA-256."

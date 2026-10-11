@@ -1,7 +1,7 @@
-"""Real Splash rendering regression for the red zero's completed pulse.
+"""Real Splash rendering regression for the red zero's final hold and fade.
 
 The archived paths remain unchanged. These checks catch the former alpha
-threshold that turned glow inside the narrow zero into nearly solid red.
+threshold and blur halo that obscured the narrow zero's negative space.
 """
 import json
 from pathlib import Path
@@ -47,7 +47,12 @@ class LogoRenderingTests(unittest.TestCase):
         self.splash.resize(1280, 800)
         self.splash.move(0, 0)
         self.events, self.errors = [], []
-        self.splash.page.message.connect(self.events.append)
+        self.loaded_at = None
+        def receive(event):
+            self.events.append(event)
+            if event.get('event') == 'loaded':
+                self.loaded_at = time.monotonic()
+        self.splash.page.message.connect(receive)
         self.splash.page.script_error.connect(self.errors.append)
         self.splash.show()
         self.splash.load()
@@ -69,7 +74,7 @@ class LogoRenderingTests(unittest.TestCase):
         self.splash.deleteLater()
         self.wait(50)
 
-    def test_zero_gap_stays_open_at_every_finished_pulse_position(self):
+    def test_zero_stays_sharp_through_last_second_and_native_fade(self):
         viewport = json.loads(self.evaluate('''JSON.stringify((() => {
             const logo = document.querySelector('#logo');
             const svg = logo.closest('svg').getBoundingClientRect();
@@ -80,7 +85,7 @@ class LogoRenderingTests(unittest.TestCase):
                 whitePathAnimation:getComputedStyle(document.querySelector('#five2 path')).animationName};
         })())'''))
         self.assertEqual(viewport['parentFilter'], 'none')
-        self.assertEqual(viewport['redAnimation'], 'logoGlowRed')
+        self.assertEqual(viewport['redAnimation'], 'none')
         self.assertEqual(viewport['redPathAnimation'], 'none')
         self.assertEqual(viewport['whitePathAnimation'], 'glowW')
         dpr = self.splash.view.devicePixelRatioF()
@@ -103,22 +108,49 @@ class LogoRenderingTests(unittest.TestCase):
         for position in [0, 650, 1300, 1950, 2590]:
             with self.subTest(pulse_ms=position, dpr=dpr):
                 self.evaluate(f'''document.querySelector('#logo').getAnimations({{subtree:true}})
-                    .filter(a => ['logoGlowRed','glowW'].includes(a.animationName))
+                    .filter(a => a.animationName === 'glowW')
                     .forEach(a => {{a.pause(); a.currentTime = {position};}})''')
                 self.wait(75)
                 image = self.splash.view.grab().toImage()
-                # Original finished glow pushed the lower channel to R=245 at
-                # peak. The corrected soft halo stays distinct from R=255 body.
+                # Neither a thresholded solid bridge nor a soft blurred halo
+                # may cloud the opening. The red body keeps its exact contour.
                 for point in gaps:
-                    self.assertLess(pixel(image, *point), 165)
+                    self.assertLessEqual(pixel(image, *point), 10)
                 self.assertGreater(pixel(image, 565, 130), 235)
-                # Bright contour expansion must be only subpixel antialiasing.
                 for y in [100, 120, 130, 150, 160]:
                     base = sum(pixel(normal, x, y) >= 200 for x in range(530, 575))
                     current = sum(pixel(image, x, y) >= 200 for x in range(530, 575))
-                    self.assertLessEqual(current - base, 2)
+                    self.assertLessEqual(current, base)
+
+        # Also exercise wall-clock frames from the actual ~4-second brief show.
+        for moment in [3300, 3700, 4000]:
+            self.wait(max(1, round(moment - (time.monotonic() - self.loaded_at) * 1000)))
+            with self.subTest(animation_elapsed_ms=moment, dpr=dpr):
+                image = self.splash.view.grab().toImage()
+                for point in gaps:
+                    self.assertLessEqual(pixel(image, *point), 10)
+                for y in [100, 120, 130, 150, 160]:
+                    base = sum(pixel(normal, x, y) >= 200 for x in range(530, 575))
+                    current = sum(pixel(image, x, y) >= 200 for x in range(530, 575))
+                    self.assertLessEqual(current, base)
+
+        self.evaluate('window.launcher.finish()')
+        exit_at = time.monotonic()
+        for moment in [50, 100, 150, 200, 400, 620]:
+            self.wait(max(1, round(moment - (time.monotonic() - exit_at) * 1000)))
+            with self.subTest(exit_elapsed_ms=moment, dpr=dpr):
+                image = self.splash.view.grab().toImage()
+                for point in gaps:
+                    # The same CRT scanline and underlying dark page can become
+                    # visible during opacity fade; compare against empty space
+                    # on that row rather than requiring a literal black pixel.
+                    background = pixel(image, 760, point[1])
+                    self.assertLessEqual(pixel(image, *point), background + 3)
+                self.assertEqual(self.evaluate("getComputedStyle(document.querySelector('#red0')).filter"), 'url("#despike")')
+                self.assertEqual(self.evaluate("getComputedStyle(document.querySelector('#red0 path')).filter"), 'none')
+        self.wait(75)
+        self.assertTrue(any(event.get('event') == 'exit_done' for event in self.events))
         self.assertFalse(self.errors)
-        self.evaluate('window.launcher.skip()')
         state = json.loads(self.evaluate('JSON.stringify(window.launcher.getState())'))
         self.assertEqual(state['timers'], {'pending': 0, 'intervals': 0, 'frames': 0})
 

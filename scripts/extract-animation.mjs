@@ -52,9 +52,9 @@ writeFileSync(resolve(root, 'web/palettes.css'), '/* GENERATED: palette-only par
 // shares its visual construction with the red zero: its visible white portion
 // is a pointed, slanted two-leg shape with an upper-left cutout (not font text).
 // All six path timings, the original viewBox, red zero and despike primitives
-// stay intact. Only the red zero is despiked before its glow, keeping its gap
-// open instead of alpha-thresholding the blurred halo. White path glows retain
-// their original order, with the same despike applied to each glyph group.
+// stay intact. The completed red zero's blur glow is suppressed by launcher.css
+// so its opening stays crisp through the final hold and native opacity fade.
+// White path glows retain their original order; each glyph is still despiked.
 let boot = element(original, '<div id="boot">').replace(/550C/g, '550W');
 must(/<g id="cee">[\s\S]*?<\/g>/.test(boot), 'original C group absent');
 boot = boot.replace(/<g id="cee">[\s\S]*?<\/g>/, `<g id="double-u">

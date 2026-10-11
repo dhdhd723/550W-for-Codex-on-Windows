@@ -1,2 +1,2 @@
 """Independent Codex splash launcher; no official client modifications."""
-__version__ = "0.3.0"
+__version__ = "0.3.1"
