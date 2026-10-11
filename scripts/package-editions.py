@@ -3,6 +3,7 @@ from pathlib import Path
 import hashlib
 import json
 import shutil
+import sys
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -73,4 +74,8 @@ def package():
 
 
 if __name__ == '__main__':
+    # Piped Python output otherwise uses cp1252 on English Windows runners.
+    # The edition names remain Unicode on disk and in GitHub release assets.
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8', errors='backslashreplace')
     package()
