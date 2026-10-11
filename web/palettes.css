@@ -1,0 +1,91 @@
+/* GENERATED: palette-only part of upstream src/enhance.js (MIT). */
+:root{
+  --phos:var(--amber);
+  --phos-lit:var(--amber-b);
+  --phos-dim:var(--text-dim);
+  --phos-off:var(--text-faint);
+  /* The Desktop window's caption strip, in this scheme. Literals on purpose:
+     client.js reads them off :root and pushes them into the two DSH tokens the
+     Desktop preload measures, and a var() chain would come back unresolved. */
+  --caption-fill:#141008; --caption-symbol:#e8a020;
+  /* Structural colours the port hardcoded, as variables whose defaults are the
+     port's own literals. --glow-rgb is the one triple every tint derives from. */
+  --glow-rgb:232,160,32;
+  --head-top:#141008; --head-top-2:#161006;
+  --title-top:#1a1208; --title-bottom:#0e0a06;
+  --btn-top:#3a2408; --btn-bottom:#1a1005;
+  --uav-glow:drop-shadow(0 0 3px rgba(224,80,48,.6));
+  --uav-done-glow:drop-shadow(0 0 6px rgba(184,200,64,.8));
+  --uav-write-glow:drop-shadow(0 0 7px rgba(255,192,67,1));
+}
+/* The port's own rules, restated through those variables: identical output. */
+#hud-top{background:linear-gradient(180deg,var(--head-top),var(--bg-panel))}
+.w{box-shadow:inset 0 0 30px rgba(var(--glow-rgb),.03)}
+.w-head{background:linear-gradient(180deg,var(--head-top-2),var(--bg-panel))}
+.w-body{scrollbar-color:rgba(var(--glow-rgb),.3) transparent}
+.w-body::-webkit-scrollbar-thumb{background:rgba(var(--glow-rgb),.25)}
+#hud-bot{background:linear-gradient(180deg,var(--bg-win),var(--bg))}
+.win-popup{box-shadow:0 24px 70px rgba(0,0,0,.78),0 0 0 1px rgba(0,0,0,.9),0 0 50px rgba(var(--glow-rgb),.1),inset 0 0 24px rgba(var(--glow-rgb),.02)}
+.wp-title{background:linear-gradient(180deg,var(--title-top),var(--title-bottom))}
+.wp-title .wp-btn:hover{background:rgba(var(--glow-rgb),.15);color:var(--amber-b);border-color:var(--amber-d)}
+.wp-body::-webkit-scrollbar-thumb{background:rgba(var(--glow-rgb),.25)}
+.wp-row{border-bottom:1px dotted rgba(var(--glow-rgb),.12)}
+.wp-note{background:rgba(var(--glow-rgb),.06)}
+.wp-log::-webkit-scrollbar-thumb{background:rgba(var(--glow-rgb),.2)}
+.wp-btn-b{background:linear-gradient(180deg,var(--title-top),var(--bg-panel))}
+.wp-btn-b:hover{background:rgba(var(--glow-rgb),.15);border-color:var(--amber);color:var(--amber-b);box-shadow:0 0 14px rgba(var(--glow-rgb),.22)}
+.wp-btn-b.primary{background:linear-gradient(180deg,var(--btn-top),var(--btn-bottom))}
+.wp-btn-b.primary:hover{background:rgba(var(--glow-rgb),.25);box-shadow:0 0 18px rgba(var(--glow-rgb),.42)}
+.wp-meter .big{text-shadow:0 0 14px rgba(var(--glow-rgb),.5)}
+.wp-wave i{background:linear-gradient(180deg,var(--amber),var(--amber-d))}
+.uav svg{filter:var(--uav-glow)}
+.uav.done svg{filter:var(--uav-done-glow)}
+.uav.writing svg{filter:var(--uav-write-glow)}
+#final{background:var(--bg-panel);border-top-color:var(--amber);border-bottom-color:var(--amber);
+  box-shadow:0 0 80px rgba(var(--glow-rgb),.55),0 0 180px rgba(var(--glow-rgb),.22),inset 0 0 80px rgba(var(--glow-rgb),.08);
+  text-shadow:0 0 14px rgba(var(--glow-rgb),.95),0 0 40px rgba(var(--glow-rgb),.6)}
+#final::before,#final::after{background:var(--amber-b);box-shadow:0 0 20px 4px rgba(var(--glow-rgb),.9)}
+
+/* ── 配色方案（可选）────────────────────────────────────────────────────
+   Opt-in, chosen in Settings, applied as data-scheme on the overlay host.
+   Amber is the author's own and deliberately has no block: selecting it clears
+   the attribute and the defaults above take over again. */
+html[data-scheme="green"]{
+  --amber:#4ad46a; --amber-b:#a6ffbb; --amber-d:#1d5a2c; --amber-fade:rgba(74,212,106,.3);
+  --text:#8fe0a4; --text-dim:#4e8a5e; --text-faint:#27452f;
+  --bg:#010601; --bg-panel:#041007; --bg-win:#06160c;
+  --red:#ff7043; --red-b:#ffa07a; --green:#a6ffbb; --cyan:#7fe0d0;
+  --glow-rgb:74,212,106;
+  --caption-fill:#08180c; --caption-symbol:#4ad46a;
+  --head-top:#08180c; --head-top-2:#0a1c0f; --title-top:#0b1e12; --title-bottom:#05120a;
+  --btn-top:#123a1c; --btn-bottom:#08180c;
+  --uav-glow:drop-shadow(0 0 3px rgba(255,112,67,.6));
+  --uav-done-glow:drop-shadow(0 0 6px rgba(166,255,187,.8));
+  --uav-write-glow:drop-shadow(0 0 7px rgba(166,255,187,1));
+}
+html[data-scheme="cyan"]{
+  --amber:#3fc8dc; --amber-b:#a6f0ff; --amber-d:#17515e; --amber-fade:rgba(63,200,220,.3);
+  --text:#8fd4e2; --text-dim:#4d8291; --text-faint:#26454e;
+  --bg:#010608; --bg-panel:#041013; --bg-win:#06161a;
+  --red:#ff5c7a; --red-b:#ff8fa3; --green:#7ff0d0; --cyan:#a6f0ff;
+  --glow-rgb:63,200,220;
+  --caption-fill:#08181d; --caption-symbol:#3fc8dc;
+  --head-top:#08181d; --head-top-2:#0a1c22; --title-top:#0b1e24; --title-bottom:#051216;
+  --btn-top:#12383f; --btn-bottom:#08181d;
+  --uav-glow:drop-shadow(0 0 3px rgba(255,92,122,.6));
+  --uav-done-glow:drop-shadow(0 0 6px rgba(127,240,208,.8));
+  --uav-write-glow:drop-shadow(0 0 7px rgba(166,240,255,1));
+}
+html[data-scheme="white"]{
+  --amber:#c9c9c9; --amber-b:#ffffff; --amber-d:#4a4a4a; --amber-fade:rgba(255,255,255,.25);
+  --text:#c0c0c0; --text-dim:#7a7a7a; --text-faint:#3d3d3d;
+  --bg:#010101; --bg-panel:#070707; --bg-win:#0c0c0c;
+  --red:#ff5a5a; --red-b:#ff8f8f; --green:#dcdcdc; --cyan:#d0d0d0;
+  --glow-rgb:255,255,255;
+  --caption-fill:#141414; --caption-symbol:#c9c9c9;
+  --head-top:#141414; --head-top-2:#161616; --title-top:#1a1a1a; --title-bottom:#0e0e0e;
+  --btn-top:#3a3a3a; --btn-bottom:#1a1a1a;
+  --uav-glow:drop-shadow(0 0 3px rgba(255,90,90,.6));
+  --uav-done-glow:drop-shadow(0 0 6px rgba(255,255,255,.8));
+  --uav-write-glow:drop-shadow(0 0 7px rgba(255,255,255,1));
+}

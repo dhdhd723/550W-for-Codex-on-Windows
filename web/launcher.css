@@ -1,0 +1,19 @@
+/* Standalone lifecycle furniture. Original animation.css remains unchanged. */
+#launcher-stage{height:100%}
+/* Keep the archived SVG geometry and original glow timings. The smoothing
+   threshold must run before the halo: thresholding a blurred SourceGraphic
+   turns the narrow red zero's negative space into a solid-looking bridge. */
+#logo > g{filter:url(#despike)}
+#logo.finished #red0 path{animation:none}
+#logo.finished > #red0{animation:logoGlowRed 2.6s ease-in-out infinite}
+@keyframes logoGlowRed{0%,100%{filter:url(#despike) drop-shadow(0 0 8px rgba(255,45,45,.6))}50%{filter:url(#despike) drop-shadow(0 0 18px rgba(255,45,45,1))}}
+body.launcher-out #launcher-stage{opacity:0;transition:opacity 200ms ease-out}
+body.launcher-out{opacity:0;transition:opacity 420ms cubic-bezier(.4,0,.2,1) 200ms}
+#launcher-status{position:fixed;left:0;right:0;bottom:28px;z-index:3000;text-align:center;letter-spacing:.13em;color:var(--amber-b);font-size:11px;padding:12px 18px;background:rgba(0,0,0,.82);border-top:1px solid var(--amber-d);border-bottom:1px solid var(--amber-d)}
+#launcher-status[hidden],#launcher-close[hidden]{display:none}
+#launcher-close{margin-left:20px;padding:4px 12px;color:var(--amber-b);background:var(--bg-panel);border:1px solid var(--amber-d);font:inherit;cursor:pointer}
+body.launcher-error #launcher-status{color:var(--red-b);border-color:var(--red)}
+html[data-scheme]:not([data-scheme="amber"]) body::before{background:repeating-linear-gradient(to bottom,rgba(var(--glow-rgb),.04) 0,rgba(var(--glow-rgb),.04) 1px,transparent 1px,transparent 3px)}
+/* Original 640px popups need this constraint only on genuinely narrow logical
+   viewports; larger displays keep the original layout without overrides. */
+@media(max-width:700px){.win-popup{min-width:0;max-width:calc(100vw - 40px)}.wp-body{padding:12px 14px}#final{padding:34px 28px;letter-spacing:.16em;font-size:clamp(16px,3.5vw,30px)}}

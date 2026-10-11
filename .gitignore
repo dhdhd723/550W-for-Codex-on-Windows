@@ -1,0 +1,36 @@
+# Build products and local runtimes
+/.venv/
+/dist/
+/build/
+/work/
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.spec
+*.lnk
+
+# Include only the reviewed public audio; exclude all machine-specific evidence.
+/web/audio/*
+!/web/audio/boot.mp3
+!/web/audio/README.md
+/docs/test-results/
+/docs/screenshots/
+/docs/LOCAL-DELIVERY.md
+/docs/GITHUB-README.md
+/docs/TEST-REPORT.md
+/docs/DELIVERY.json
+/docs/APP-SERVER-SPINNER.md
+*.log
+
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local configuration and credentials
+.env
+.env.*
+/config.json
+/diagnostics.json
+*.key
+*.pem
+*.pfx

@@ -1,0 +1,3 @@
+# Versions fixed for the tested build, rather than silently upgrading Qt.
+PySide6==6.11.2
+PyInstaller==6.22.3
