@@ -53,7 +53,29 @@ jobs:
             throw 'The pushed tag does not match pyproject.toml.'
           }
           $repo = $env:GH_REPO
-          $files = @('dist/550W简洁版.zip', 'dist/550W完整版.zip', 'dist/SHA256SUMS.txt')
+          # GitHub normalizes both Chinese asset names to 550W.zip. Keep the
+          # requested Chinese local filenames and archive contents, but use
+          # distinct ASCII upload aliases with Chinese display labels.
+          $uploadDirectory = Join-Path (Get-Location).Path 'dist/github-release'
+          New-Item -ItemType Directory -Path $uploadDirectory -Force | Out-Null
+          $aliases = @(
+            @{ Source = 'dist/550W简洁版.zip'; Name = '550W-Brief.zip'; Label = '550W简洁版（无音频）' },
+            @{ Source = 'dist/550W完整版.zip'; Name = '550W-Full.zip'; Label = '550W完整版（带音频）' }
+          )
+          $checksumLines = @()
+          $labels = @{}
+          $files = @()
+          foreach ($alias in $aliases) {
+            $destination = Join-Path $uploadDirectory $alias.Name
+            Copy-Item -LiteralPath $alias.Source -Destination $destination
+            $hash = (Get-FileHash -LiteralPath $destination -Algorithm SHA256).Hash.ToLowerInvariant()
+            $checksumLines += "$hash  $($alias.Name)"
+            $labels[$alias.Name] = $alias.Label
+            $files += $destination
+          }
+          $checksumPath = Join-Path $uploadDirectory 'SHA256SUMS.txt'
+          [IO.File]::WriteAllText($checksumPath, (($checksumLines -join "`n") + "`n"), [Text.UTF8Encoding]::new($false))
+          $files += $checksumPath
           $expected = @{}
           foreach ($path in $files) {
             $file = Get-Item -LiteralPath $path
@@ -112,7 +134,9 @@ jobs:
                 if ($LASTEXITCODE -ne 0) { throw 'Cannot remove an incomplete draft upload.' }
               } elseif ($asset.Count -ne 0) { throw "Unexpected draft asset: $name; refusing to overwrite it." }
               Write-Host "Uploading $name (attempt $attempt of 3)..."
-              gh release upload $tag $path
+              $uploadArgument = $path
+              if ($labels.ContainsKey($name)) { $uploadArgument += '#' + $labels[$name] }
+              gh release upload $tag $uploadArgument
               $uploadExit = $LASTEXITCODE
               $release = Read-OwnDraft
               $asset = @($release.assets | Where-Object { $_.name -ceq $name })

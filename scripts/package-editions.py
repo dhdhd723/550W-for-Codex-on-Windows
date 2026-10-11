@@ -53,7 +53,7 @@ def package():
         asset_hashes = {}
         for relative in ('web/index.html', 'web/animation.js', 'web/launcher.js', 'web/animation.css', 'web/launcher.css', 'web/palettes.css'):
             asset_hashes[relative] = hashlib.sha256((target / '_internal' / relative).read_bytes()).hexdigest()
-        metadata = {'version': '0.3.1', 'edition': edition, 'asset_sha256': asset_hashes,
+        metadata = {'version': '0.3.2', 'edition': edition, 'asset_sha256': asset_hashes,
                     'audio_included': edition['sound'], 'local_user_records_included': False,
                     'license_scope': 'New launcher code MIT; animation/audio redistribution permission not confirmed'}
         (target / 'RELEASE.json').write_text(json.dumps(metadata, ensure_ascii=False, indent=2)+'\n', encoding='utf-8')

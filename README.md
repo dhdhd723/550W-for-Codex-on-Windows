@@ -11,7 +11,7 @@
 
 两版支持琥珀、绿色、青色、白色，以及点击或 Esc 跳过。窗口未就绪时继续等待；失败或超时会提示并关闭启动器自己的动画。
 
-0.3.1 已关闭红色 0 完成后的模糊光晕，让最后一秒和淡出时的轮廓保持清晰；原 SVG 轮廓与绘制时序保留。
+0.3.2 保留了红色 0 的清晰轮廓与纯透明度淡出，并修正最终横牌的宽度，避免文字被裁切；原 SVG 轮廓与绘制时序保留。
 
 解压并保留整个目录，双击 `550W简洁版.exe` / `550W完整版.exe` 或 `Run.cmd`。不要单独移动 EXE，`_internal` 资源需要一起保留。官方 Codex 需事先安装并能独立启动。`Preview.cmd` 用于预览，`Settings.cmd` 用于设置，`Create-Shortcut.cmd` 用于创建快捷方式。
 
@@ -25,4 +25,4 @@
 
 本项目为独立启动器，与 OpenAI 没有官方关联。
 
-下载两个 Windows 目录包：[Releases](https://github.com/dhdhd723/550W-for-Codex-on-Windows/releases)。完整包需一起保留 `_internal`，简洁包不包含 MP3。两版的偏好分开保存。
+下载两个 Windows 目录包：[Releases](https://github.com/dhdhd723/550W-for-Codex-on-Windows/releases)。GitHub 会规范化中文附件名，因此下载附件采用 `550W-Brief.zip`（简洁版）和 `550W-Full.zip`（完整版）；解压后的文件夹和 EXE 仍分别叫 `550W简洁版` 与 `550W完整版`，本机构建的 ZIP 也保留中文名。完整包需一起保留 `_internal`，简洁包不包含 MP3。两版的偏好分开保存。

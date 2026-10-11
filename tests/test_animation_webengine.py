@@ -120,16 +120,34 @@ class AnimationTests(unittest.TestCase):
         self.assertEqual(self.evaluate("document.querySelectorAll('.uav.done').length"), 47)
         self.assertEqual(self.evaluate("document.querySelector('#final').textContent"), "SYSTEM IS REWRITTEN")
         self.assertTrue(self.evaluate("document.querySelector('#final').classList.contains('show')"))
-        final = json.loads(self.evaluate("""JSON.stringify((() => {
-            const e = document.querySelector('#final'), r = e.getBoundingClientRect(), s = getComputedStyle(e);
-            return {clip:s.clipPath, opacity:s.opacity, x:r.x, right:r.right,
-                    width:r.width, viewport:innerWidth};
-        })())"""))
-        self.assertEqual(final['clip'], 'inset(0px)', 'Final banner must fully expand before handoff')
-        self.assertEqual(final['opacity'], '1')
-        self.assertGreater(final['width'], final['viewport'] * 0.5)
-        self.assertGreaterEqual(final['x'], -1)
-        self.assertLessEqual(final['right'], final['viewport'] + 1)
+        # Check the actual text Range, not just the panel: fixed left:50%
+        # shrink-to-fit used to leave a half-width panel with clipped letters.
+        # One full run then resizing also covers the narrow-screen CSS boundary.
+        for width in [1280, 1920, 700, 640]:
+            with self.subTest(final_viewport=width):
+                # A fixed logical size also exercises 1920px on displays whose
+                # current desktop scaling would otherwise clamp a titled view.
+                self.view.setFixedSize(width, 800)
+                QTest.qWait(100)
+                final = json.loads(self.evaluate("""JSON.stringify((() => {
+                    const e = document.querySelector('#final'), r = e.getBoundingClientRect();
+                    const s = getComputedStyle(e), range = document.createRange();
+                    range.selectNodeContents(e);
+                    const text = range.getBoundingClientRect();
+                    return {clip:s.clipPath, opacity:s.opacity, x:r.x, right:r.right,
+                        width:r.width, viewport:innerWidth, textX:text.x,
+                        textRight:text.right, textWidth:text.width};
+                })())"""))
+                self.assertEqual(final['viewport'], width)
+                self.assertEqual(final['clip'], 'inset(0px)', 'Final banner must fully expand before handoff')
+                self.assertEqual(final['opacity'], '1')
+                self.assertGreater(final['textWidth'], 0)
+                self.assertGreaterEqual(final['x'], -1)
+                self.assertLessEqual(final['right'], final['viewport'] + 1)
+                self.assertGreaterEqual(final['textX'], final['x'])
+                self.assertLessEqual(final['textRight'], final['right'])
+                self.assertGreaterEqual(final['textX'], 0)
+                self.assertLessEqual(final['textRight'], final['viewport'])
         display = self.evaluate("document.querySelector('#app').innerText")
         self.assertNotIn('CODEX', display.upper())
         self.assertIn('550W CORE TERMINAL', display)

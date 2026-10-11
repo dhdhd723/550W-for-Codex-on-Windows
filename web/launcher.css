@@ -5,6 +5,9 @@
    blur halo previously thickened the contour and clouded the negative space. */
 #logo > g{filter:url(#despike)}
 #logo.finished #red0 path{animation:none}
+/* A fixed panel at left:50% otherwise shrink-fits the remaining half viewport,
+   clipping its own unwrapped text. Keep the complete original final plate. */
+#final{width:max-content;max-width:calc(100vw - 40px);padding-inline:clamp(28px,8.6vw,110px)}
 body.launcher-out #launcher-stage{opacity:0;transition:opacity 200ms ease-out}
 body.launcher-out{opacity:0;transition:opacity 420ms cubic-bezier(.4,0,.2,1) 200ms}
 #launcher-status{position:fixed;left:0;right:0;bottom:28px;z-index:3000;text-align:center;letter-spacing:.13em;color:var(--amber-b);font-size:11px;padding:12px 18px;background:rgba(0,0,0,.82);border-top:1px solid var(--amber-d);border-bottom:1px solid var(--amber-d)}
